@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Plugin-Name: dotCMS SOLR Plugin
+Deploy-Class: com.dotcms.solr.util.SolrPluginDeployer
+Plugin-Version: 1.0
+Author: dotCMS
