@@ -25,13 +25,13 @@
 		<tr>
 			<td class="solr_tcenter"><%= solrServerUrl %></td>
 			<td class="solr_tcenter"><a target="new" href="<%= solrServerUrl+"/admin" %>"><%= solrServerUrl+"/admin" %></a></td>
-		</tr>
-	</table>
+		</tr>	
 <%   }
 	}catch(Exception e){
 		nastyError = e.getMessage();
-	}
-   }else{%>	
+	}%>
+</table>
+<% }else{%>	
 <table class="listingTable shadowBox">
 		<tr>
 			<th><%= LanguageUtil.get(pageContext, "SOLR_instance") %></th>		

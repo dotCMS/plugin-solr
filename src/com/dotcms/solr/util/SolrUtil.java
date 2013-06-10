@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,17 +41,24 @@ import org.apache.tika.sax.BodyContentHandler;
 import org.xml.sax.ContentHandler;
 
 import com.dotcms.solr.business.DotSolrException;
+import com.dotmarketing.beans.Host;
 import com.dotmarketing.business.APILocator;
 import com.dotmarketing.cache.FieldsCache;
 import com.dotmarketing.common.db.DotConnect;
 import com.dotmarketing.db.DbConnectionFactory;
 import com.dotmarketing.exception.DotDataException;
 import com.dotmarketing.exception.DotSecurityException;
+import com.dotmarketing.plugin.business.PluginAPI;
 import com.dotmarketing.portlets.categories.model.Category;
+import com.dotmarketing.portlets.contentlet.business.ContentletAPI;
+import com.dotmarketing.portlets.contentlet.business.HostAPI;
 import com.dotmarketing.portlets.contentlet.model.Contentlet;
 import com.dotmarketing.portlets.fileassets.business.FileAssetAPI;
+import com.dotmarketing.portlets.structure.factories.FieldFactory;
+import com.dotmarketing.portlets.structure.factories.StructureFactory;
 import com.dotmarketing.portlets.structure.model.Field;
 import com.dotmarketing.portlets.structure.model.FieldVariable;
+import com.dotmarketing.portlets.structure.model.Structure;
 import com.dotmarketing.util.Config;
 import com.dotmarketing.util.Logger;
 import com.dotmarketing.util.StringUtils;
@@ -247,7 +253,7 @@ public class SolrUtil {
 	 * @throws MalformedURLException
 	 */
 	public static QueryResponse executeURLSolrParamsSearch(String SolrServerUrl, int start, int rows, String queryType,String facet, String ident, String query, String myCollection, String username, String password)
-	throws SolrServerException, MalformedURLException {
+			throws SolrServerException, MalformedURLException {
 
 		CommonsHttpSolrServer server = new CommonsHttpSolrServer(SolrServerUrl);
 		server.setParser(new XMLResponseParser());
@@ -297,7 +303,7 @@ public class SolrUtil {
 	 * @throws MalformedURLException
 	 */
 	public static QueryResponse executeModifiableSolrParamsSearch(String SolrServerUrl, int start, int rows,String queryType, String facet, String ident, String query, String myCollection, String username, String password)
-	throws SolrServerException, MalformedURLException {
+			throws SolrServerException, MalformedURLException {
 
 		CommonsHttpSolrServer server = new CommonsHttpSolrServer(SolrServerUrl);
 		server.setParser(new XMLResponseParser());
@@ -346,7 +352,7 @@ public class SolrUtil {
 	 * @throws MalformedURLException
 	 */
 	public static QueryResponse executeSolrQuerySearch(String SolrServerUrl, int start, int rows,String queryType, String facet, String ident, String query, String myCollection, String username, String password)
-	throws SolrServerException, MalformedURLException {
+			throws SolrServerException, MalformedURLException {
 		CommonsHttpSolrServer server = new CommonsHttpSolrServer(SolrServerUrl);
 		server.setParser(new XMLResponseParser());
 
@@ -694,5 +700,147 @@ public class SolrUtil {
 			}
 		}
 		return translateMeta;
+	}
+
+	/**
+	 * Added in plugin Update
+	 */
+	private static final String pluginId = "com.dotcms.solr";
+	private static final String SOLR_SERVER_CONFIGURATION_FIELD="Solr Configuration";
+	private static final String SOLR_SERVER_FIELD="Solr Servers";
+	private static final String SOLR_SERVER_FIELD_VAR_NAME="solrServers";
+	private static PluginAPI pluginAPI = APILocator.getPluginAPI();
+	private static HostAPI hostAPI = APILocator.getHostAPI();
+
+	/**
+	 * Update the host structure including the Solr server field
+	 * @throws DotDataException 
+	 * @throws NumberFormatException 
+	 * @throws DotSecurityException 
+	 */
+	public static void UpdateHostTable() throws NumberFormatException, DotDataException, DotSecurityException{
+		Structure host = StructureFactory.getStructureByVelocityVarName("Host");
+		Field solrServers = host.getFieldVar(SOLR_SERVER_FIELD_VAR_NAME);
+		String solrServersList = "";
+		if(!UtilMethods.isSet(solrServers) || !UtilMethods.isSet(solrServers.getInode())){
+			Field sectionDivider = new Field(SOLR_SERVER_CONFIGURATION_FIELD, Field.FieldType.LINE_DIVIDER, Field.DataType.SECTION_DIVIDER, host, false, false, false, 30, false, true, false);
+			FieldFactory.saveField(sectionDivider);
+			FieldsCache.clearCache();
+
+			solrServers = new Field(SOLR_SERVER_FIELD,Field.FieldType.CUSTOM_FIELD,Field.DataType.LONG_TEXT,host,false,false,false,31, false, false, false);
+			solrServers.setVelocityVarName(SOLR_SERVER_FIELD_VAR_NAME);			
+			solrServers.setDefaultValue("");
+			String value="<select id=\"solrServersTemp\" name=\"solrServersTemp\" onChange=\"updateSolrServer(this)\" multiple=\"multiple\" >\n";
+			
+			int serversNumber = Integer.parseInt(pluginAPI.loadProperty(pluginId, "com.dotcms.solr.SOLR_SERVER_NUMBER"));
+			for(int server=0; server < serversNumber; server++ ){
+				String solrServerUrl = pluginAPI.loadProperty(pluginId, "com.dotcms.solr."+server+".SOLR_SERVER");
+				value+="<option value=\""+solrServerUrl+"\">"+solrServerUrl+"</option>\n";
+				solrServersList+=","+solrServerUrl;
+			}			
+
+			value+="</select>\n<script type=\"text/javascript\">\n";
+			value+="function initSolrServerField(){\n";
+			value+="  var selectedValue= document.getElementById('solrServers').value;\n";
+			value+="  var currentSelectedValues= selectedValue.split(',');\n";
+			value+="  var selectField = document.getElementById('solrServersTemp');\n";
+			value+="  for (j=0; j<currentSelectedValues.length; j++) {\n";
+			value+="    for (i=0; i<selectField.options.length; i++) {\n";					
+			value+="      if (selectField.options[i].value == currentSelectedValues[j]) {\n";
+			value+="       selectField.options[i].selected=true;\n";
+			value+="       break;\n";
+			value+="      }\n";
+			value+="    }\n";
+			value+="  }\n";
+			value+="}\n";
+			value+="function updateSolrServer(selectField){\n";
+			value+="  var selected='';\n";
+			value+="  for (i=0; i<selectField.options.length; i++) {\n";
+			value+="    if (selectField.options[i].selected) {\n";
+			value+="      selected += ','+selectField.options[i].value;\n";					      
+			value+="    }\n";
+			value+="  }\n";
+			value+="  if(selected != ''){\n";
+			value+="    selected = selected.substring(1);\n";
+			value+="  }\n";
+			value+="  document.getElementById('solrServers').value=selected;\n";
+			value+="}\n";
+			value+="initSolrServerField();\n</script>";			
+			solrServers.setValues(value);
+			FieldFactory.saveField(solrServers);
+			FieldsCache.clearCache();
+
+			/*Update Host contentlet to look in all the solr servers*/
+			boolean updateHost = Boolean.parseBoolean(pluginAPI.loadProperty(pluginId, "com.dotcms.solr.SET_ALL_SOLR_SERVERS_IN_HOSTS"));
+			if(updateHost){
+				if(UtilMethods.isSet(solrServersList)){
+					solrServersList = solrServersList.substring(1);	
+				}
+				User user = APILocator.getUserAPI().getSystemUser();
+				List<Host> allHosts = APILocator.getHostAPI().findAll(user, false);
+				ContentletAPI conAPI = APILocator.getContentletAPI();
+				for(Host currentHost : allHosts){
+					if(!currentHost.isSystemHost()){
+						Contentlet cont = conAPI.checkout(currentHost.getInode(), user, false);
+						conAPI.setContentletProperty(cont, solrServers, solrServersList);
+						cont = conAPI.checkin(cont, user, false);
+						conAPI.publish(cont, user, false);
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Get the list of Solr servers associated with that content
+	 * @param con Contentlet
+	 * @param user 
+	 * @return List<String>
+	 */
+	public static List<String> getContentletSolrServers(Contentlet con, User user){
+		List<String> solarServers = new ArrayList<String>();
+		Field solrSeversField = null;
+		try{
+			Host host = hostAPI.find(con.getHost(), user, false);
+			solrSeversField = host.getStructure().getFieldVar(SOLR_SERVER_FIELD_VAR_NAME);
+			String servers = (String)APILocator.getContentletAPI().getFieldValue(host, solrSeversField);
+			if(UtilMethods.isSet(servers)){
+				for(String server : servers.split(",")){
+					solarServers.add(server);
+				}
+			}
+		}catch(Exception e){
+			Logger.error(SolrUtil.class, "Error getting contentlet Solr Servers associated."+e.getMessage(),e);			 
+		}
+		return solarServers;
+	}
+
+	/**
+	 * Escape quotation marks so they work in javascript fields
+	 */
+	public static String escapeQuotes(String fixme) {
+		String doubleQuote = "\"";
+
+		String singleQuote = "'";
+		String escapedSingleQuote = "\\'";
+
+		if (fixme != null) {
+			fixme = fixme.trim();
+
+			try {
+				// first replace double quotes with single quotes
+				fixme = fixme.replaceAll(doubleQuote, singleQuote);
+
+				// now escape all the single quotes
+				fixme = fixme.replaceAll(singleQuote, escapedSingleQuote);
+
+				return fixme;
+			} catch (Exception e) {
+				Logger.error(UtilMethods.class, "Could not parse string [" + fixme + "] for escaping quotes: " + e.toString(), e);
+				return "";
+			}
+		} else {
+			return "";
+		}
 	}
 }

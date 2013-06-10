@@ -25,6 +25,7 @@ public class SolrPluginDeployer implements PluginDeployer{
 	public boolean deploy() {
 		try {
 			SolrUtil.createSolrTable();
+			SolrUtil.UpdateHostTable();
 			String jobName = pluginAPI.loadProperty(pluginId, "quartz.job.name");
 			String jobGroup = pluginAPI.loadProperty(pluginId, "quartz.job.group");
 			String jobDescription = pluginAPI.loadProperty(pluginId, "quartz.job.description");
@@ -47,7 +48,7 @@ public class SolrPluginDeployer implements PluginDeployer{
 				SolrUtil.deleteSolrTable();				
 			}
 			SolrUtil.createSolrTable();
-
+			SolrUtil.UpdateHostTable();
 			String jobName = pluginAPI.loadProperty(pluginId, "quartz.job.name");
 			String jobGroup = pluginAPI.loadProperty(pluginId, "quartz.job.group");
 			String jobDescription = pluginAPI.loadProperty(pluginId, "quartz.job.description");

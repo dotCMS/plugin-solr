@@ -66,7 +66,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addObject(con.getIdentifier());
 				dc.addObject(con.getLanguageId());
 				dc.addParam(new Date());
-				dc.addParam(DbConnectionFactory.getDBFalse());				
+				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();	
 			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
 				dc.setSQL(MYINSERTSOLRSQL);
@@ -128,7 +128,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addObject(con.getIdentifier());
 				dc.addObject(con.getLanguageId());
 				dc.addParam(new Date());
-				dc.addParam(DbConnectionFactory.getDBFalse());				
+				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();	
 			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
 				dc.setSQL(MYDELETESOLRSQL);
@@ -180,7 +180,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addObject(identifier);
 				dc.addObject(languageId);
 				dc.addParam(new Date());
-				dc.addParam(DbConnectionFactory.getDBFalse());				
+				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();	
 			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
 				dc.setSQL(MYDELETESOLRSQL);
@@ -258,19 +258,15 @@ public class SolrAPIImpl extends SolrAPI{
 	/**
 	 * Get the total of all the elements in the solr_queue table that could be processes because some error
 	 * @param condition WHERE condition
-	 * @param orderBy ORDER BY condition
 	 * @return List<Map<String,Object>>
 	 * @throws DotSolrException
 	 */
-	public List<Map<String,Object>> getQueueErrorsCounter(String condition, String orderBy) throws DotSolrException {
+	public List<Map<String,Object>> getQueueErrorsCounter(String condition) throws DotSolrException {
 		try{
 			DotConnect dc = new DotConnect();
 			String query = "";
 			if(UtilMethods.isSet(condition)){
 				query = " AND "+condition;
-			}
-			if(UtilMethods.isSet(orderBy)){
-				query += " ORDER BY "+orderBy;
 			}
 			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
 				dc.setSQL(PSGETPAGINATEDENTRIESCOUNTERWITHERRORS+query);
@@ -371,20 +367,17 @@ public class SolrAPIImpl extends SolrAPI{
 	/**
 	 * Get the total of All the Assets in the solr_queue table paginated
 	 * @param condition WHERE condition
-	 * @param orderBy ORDER BY condition
 	 * @return List<Map<String,Object>>
 	 * @throws DotSolrException
 	 */
-	public List<Map<String,Object>> getSolrQueueContentletsCounter(String condition, String orderBy) throws DotSolrException{
+	public List<Map<String,Object>> getSolrQueueContentletsCounter(String condition) throws DotSolrException{
 		try{
 			DotConnect dc = new DotConnect();
 			String query = "";
 			if(UtilMethods.isSet(condition)){
 				query = " WHERE "+condition;
 			}
-			if(UtilMethods.isSet(orderBy)){
-				query += " ORDER BY "+orderBy;
-			}
+			
 			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
 				dc.setSQL(PSGETQUEUEPAGINATEDASSETSCOUNTERTOINDEX+query);
 			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
@@ -453,19 +446,15 @@ public class SolrAPIImpl extends SolrAPI{
 	/**
 	 * Get the total of Assets not processed yet to update the Solr index paginated
 	 * @param condition WHERE condition
-	 * @param orderBy ORDER BY condition
 	 * @return List<Map<String,Object>>
 	 * @throws DotSolrException
 	 */
-	public List<Map<String,Object>> getSolrQueueContentletToProcessCounter(String condition, String orderBy) throws DotSolrException{
+	public List<Map<String,Object>> getSolrQueueContentletToProcessCounter(String condition) throws DotSolrException{
 		try{
 			DotConnect dc = new DotConnect();
 			String query = "";
 			if(UtilMethods.isSet(condition)){
 				query = " AND "+condition;
-			}
-			if(UtilMethods.isSet(orderBy)){
-				query += " ORDER BY "+orderBy;
 			}
 			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
 				dc.setSQL(PSGETPAGINATEDASSETSCOUNTERTOINDEX+query);

@@ -1,3 +1,4 @@
+<%@page import="com.dotcms.solr.util.SolrUtil"%>
 <%@page import="com.dotmarketing.plugin.business.PluginAPI"%>
 <%@page import="com.dotmarketing.util.URLEncoder"%>
 <%@page import="java.util.Date"%>
@@ -114,13 +115,13 @@ try{
 	
 	if(showPendings && showErrors){
 		iresults =  solrAPI.getSolrQueueContentletsPaginated(query, sortBy, offset, limit);
-		counter =  solrAPI.getSolrQueueContentletsCounter(query, sortBy).get(0).get("count").toString();
+		counter =  solrAPI.getSolrQueueContentletsCounter(query).get(0).get("count").toString();
 	}else if (showPendings) {
 		iresults = solrAPI.getSolrQueueContentletToProcessPaginated(query, sortBy, offset, limit);
-		counter =  solrAPI.getSolrQueueContentletToProcessCounter(query, sortBy).get(0).get("count").toString();
+		counter =  solrAPI.getSolrQueueContentletToProcessCounter(query).get(0).get("count").toString();
 	}else if(showErrors) {
 		iresults = solrAPI.getQueueErrorsPaginated(query, sortBy, offset, limit);	
-		counter =  solrAPI.getQueueErrorsCounter(query, sortBy).get(0).get("count").toString();
+		counter =  solrAPI.getQueueErrorsCounter(query).get(0).get("count").toString();
 	}else {
 		iresults =  new ArrayList();
 		counter="0";
@@ -208,7 +209,7 @@ try{
 			    	<script type="text/javascript">
 			    		new dijit.Tooltip({
 					     	connectId: ["error_<%=c.get("id")%>"],
-					     	label: "<%=UtilMethods.escapeQuotes((String)c.get("last_results"))%>"
+					     	label: "<%=SolrUtil.escapeQuotes(UtilMethods.javaScriptify((String)c.get("last_results")))%>"
 					  	});
 			    	</script>
 			    <%}else{ %>

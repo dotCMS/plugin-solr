@@ -3,6 +3,7 @@ package com.dotcms.solr.business;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -25,10 +26,7 @@ import com.dotmarketing.portlets.categories.model.Category;
 import com.dotmarketing.portlets.contentlet.business.ContentletAPI;
 import com.dotmarketing.portlets.contentlet.business.HostAPI;
 import com.dotmarketing.portlets.contentlet.model.Contentlet;
-import com.dotmarketing.portlets.fileassets.business.FileAssetAPI;
 import com.dotmarketing.portlets.fileassets.business.IFileAsset;
-import com.dotmarketing.portlets.files.business.FileAPI;
-import com.dotmarketing.portlets.files.model.File;
 import com.dotmarketing.portlets.structure.model.Field;
 import com.dotmarketing.portlets.structure.model.FieldVariable;
 import com.dotmarketing.portlets.structure.model.Structure;
@@ -49,7 +47,6 @@ public class SolrQueueJob implements StatefulJob {
 	private UserAPI userAPI = APILocator.getUserAPI();
 	private HostAPI hostAPI = APILocator.getHostAPI();
 	private SolrAPI solrAPI = SolrAPI.getInstance();
-	private FileAPI fileAPI = APILocator.getFileAPI();
 	private IdentifierAPI identifierAPI = APILocator.getIdentifierAPI() ;
 
 	public void execute(JobExecutionContext arg0) throws JobExecutionException {
@@ -95,10 +92,15 @@ public class SolrQueueJob implements StatefulJob {
 				Logger.info(SolrQueueJob.class, "Solr Queue element(s) to process: "+solrQueue.size());
 
 				if(solrQueue.size() > 0){
-					Collection<SolrInputDocument> addDocs = new ArrayList<SolrInputDocument>(); 
-					List<Map<String,Object>> solrIdAddDocs = new ArrayList<Map<String,Object>>(); 
-					List<String> deleteDocs = new ArrayList<String>(); 
-					List<Map<String,Object>> solrIdDeleteDocs = new ArrayList<Map<String,Object>>(); 
+					Map<String,Collection<SolrInputDocument>> addDocs = new HashMap<String,Collection<SolrInputDocument>>();
+					Map<String,List<Map<String,Object>>> solrIdAddDocs = new HashMap<String,List<Map<String,Object>>>();
+					//Collection<SolrInputDocument> addDocs = new ArrayList<SolrInputDocument>(); 
+					//List<Map<String,Object>> solrIdAddDocs = new ArrayList<Map<String,Object>>(); 
+					Map<String,List<String>> deleteDocs = new HashMap<String,List<String>>();
+					Map<String,List<Map<String,Object>>> solrIdDeleteDocs = new HashMap<String,List<Map<String,Object>>>();
+					//List<String> deleteDocs = new ArrayList<String>(); 
+					//List<Map<String,Object>> solrIdDeleteDocs = new ArrayList<Map<String,Object>>(); 
+					Map<String,Long> languages = new HashMap<String,Long>();
 
 					for(Map<String,Object> solr : solrQueue){
 						try {							
@@ -115,6 +117,7 @@ public class SolrQueueJob implements StatefulJob {
 									Logger.debug(SolrQueueJob.class,e.getMessage(),e);
 								}
 								if(UtilMethods.isSet(con)){
+									languages.put(con.getIdentifier(), con.getLanguageId());
 									doc.addField("id", con.getIdentifier());
 									doc.addField("inode", con.getInode());
 									doc.addField("modUser", con.getModUser());
@@ -266,36 +269,48 @@ public class SolrQueueJob implements StatefulJob {
 										}
 									}
 									/*variables  to send docs in groups per request in solr*/
-									addDocs.add(doc);
-									solrIdAddDocs.add(solr);
+									for(String solrServerUrl : SolrUtil.getContentletSolrServers(con,user)){
+										if(!addDocs.containsKey(solrServerUrl)){
+											addDocs.put(solrServerUrl, new ArrayList<SolrInputDocument>());
+										}
+										if(!solrIdAddDocs.containsKey(solrServerUrl)){
+											solrIdAddDocs.put(solrServerUrl,new ArrayList<Map<String,Object>>());
+										}
+										Collection<SolrInputDocument> addDocsList = addDocs.get(solrServerUrl);
+										addDocsList.add(doc);
+										addDocs.put(solrServerUrl,addDocsList);
 
-									if(addDocs.size() == documentsPerRequest){
+										List<Map<String,Object>> solrIdAddDocsList = solrIdAddDocs.get(solrServerUrl);
+										solrIdAddDocsList.add(solr);
+										solrIdAddDocs.put(solrServerUrl,solrIdAddDocsList);
+
 										/* Add or update index element*/
-										Logger.debug(SolrQueueJob.class,"Sending Add/Update Document(s) group request to Solr");
-										try {
-											Logger.debug(SolrQueueJob.class,"Document(s) to Add/Update: "+addDocs.size());
-											for(int server=0; server < serversNumber; server++ ){
-												String solrServerUrl = pluginAPI.loadProperty(pluginId, "com.dotcms.solr."+server+".SOLR_SERVER");
-												SolrUtil.addToSolrIndex(solrServerUrl, addDocs);
+										if(addDocsList.size() == documentsPerRequest){
+											Logger.debug(SolrQueueJob.class,"Sending Add/Update Document(s) group request to Solr");
+											try {
+												SolrUtil.addToSolrIndex(solrServerUrl,addDocsList);
+												int addCounter = 0;
+												for(Map<String,Object> solrO : solrIdAddDocsList){
+													solrAPI.deleteElementFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()));//delete from table	
+													addCounter++;
+												}
+												addDocsList.clear();
+												addDocs.remove(solrServerUrl);
+												solrIdAddDocsList.clear();
+												solrIdAddDocs.remove(solrServerUrl);
+												Logger.debug(SolrQueueJob.class,"Document(s) Added/Updated: "+addCounter);
+											}catch(Exception e){
+												Logger.debug(SolrQueueJob.class,e.getMessage(),e);
+												Logger.debug(SolrQueueJob.class,"Document(s) not Added/Updated: "+addDocsList.size());
+												for(Map<String,Object> solrO : solrIdAddDocsList){
+													solrAPI.updateElementStatusFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()),new Date(),(Integer.parseInt(solrO.get("num_of_tries").toString())+1), true, "An error occurs trying to add/update this assets in the Solr Index. ERROR: "+e);
+												}
+												addDocsList.clear();
+												addDocs.remove(solrServerUrl);
+												solrIdAddDocsList.clear();
+												solrIdAddDocs.remove(solrServerUrl);
+												break;
 											}
-											int addCounter = 0;
-											for(Map<String,Object> solrO : solrIdAddDocs){
-												solrAPI.deleteElementFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()));//delete from table	
-												addCounter++;
-											}
-											addDocs.clear();
-											solrIdAddDocs.clear();
-											Logger.debug(SolrQueueJob.class,"Document(s) Added/Updated: "+addCounter);
-										}catch(Exception e){
-											Logger.debug(SolrQueueJob.class,e.getMessage(),e);
-											int addCounter = 0;
-											Logger.debug(SolrQueueJob.class,"Document(s) not Added/Updated: "+addDocs.size());
-											for(Map<String,Object> solrO : solrIdAddDocs){
-												solrAPI.updateElementStatusFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()),new Date(),(Integer.parseInt(solrO.get("num_of_tries").toString())+1), true, "An error occurs trying to add/update this assets in the Solr Index. ERROR: "+e);
-												addCounter++;
-											}
-											addDocs.clear();
-											solrIdAddDocs.clear();
 										}
 									}
 								}else{
@@ -304,39 +319,55 @@ public class SolrQueueJob implements StatefulJob {
 							} else if(Long.parseLong(solr.get("solr_operation").toString()) == SolrAPI.DELETE_SOLR_ELEMENT){
 								/* delete element from index*/
 								String id = (String)solr.get("asset_identifier");
+								languages.put((String)solr.get("asset_identifier"), Long.parseLong(solr.get("language_id").toString()));
 
-								/*variables  to send docs in groups per request in solr*/
-								deleteDocs.add(id);
-								solrIdDeleteDocs.add(solr);
+								long languageId = languages.get(id); 
+								Contentlet con = conAPI.findContentletByIdentifier(id, true, languageId, user, false);
 
-								if(deleteDocs.size() == documentsPerRequest){
-									Logger.debug(SolrQueueJob.class,"Sending Delete Document(s) group request to Solr");
-									try {
-										Logger.debug(SolrQueueJob.class,"Document(s) to Delete: "+deleteDocs.size());
-										for(int server=0; server < serversNumber; server++ ){
-											String solrServerUrl = pluginAPI.loadProperty(pluginId, "com.dotcms.solr."+server+".SOLR_SERVER");
-											SolrUtil.deleteFromSolrIndexById(solrServerUrl, deleteDocs);
-										}
-										int deleteCounter = 0;
-										for(Map<String,Object> solrO : solrIdDeleteDocs){
-											solrAPI.deleteElementFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()));//delete from table
-											deleteCounter++;
-										}
-										deleteDocs.clear();
-										solrIdDeleteDocs.clear();
-										Logger.debug(SolrQueueJob.class,"Document(s) Deleted: "+deleteCounter);										
-									}catch(Exception e){
-										Logger.debug(SolrQueueJob.class,e.getMessage(),e);
-										int deleteCounter = 0;
-										Logger.debug(SolrQueueJob.class,"Document(s) not Deleted: "+deleteDocs.size());
-										for(Map<String,Object> solrO : solrIdDeleteDocs){
-											solrAPI.updateElementStatusFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()),new Date(),(Integer.parseInt(solrO.get("num_of_tries").toString())+1), true, "An error occurs trying to delete this assets in the Solr Index. ERROR: "+e);
-											deleteCounter++;
-										}
-										deleteDocs.clear();
-										solrIdDeleteDocs.clear();
+								for(String solrServerUrl : SolrUtil.getContentletSolrServers(con,user)){
+									if(!deleteDocs.containsKey(solrServerUrl)){
+										deleteDocs.put(solrServerUrl, new ArrayList<String>());
 									}
-								}
+									if(!solrIdDeleteDocs.containsKey(solrServerUrl)){
+										solrIdDeleteDocs.put(solrServerUrl,new ArrayList<Map<String,Object>>());
+									}
+									List<String> deleteDocsList = deleteDocs.get(solrServerUrl);
+									deleteDocsList.add(id);
+									deleteDocs.put(solrServerUrl,deleteDocsList);
+
+									List<Map<String,Object>> solrIdDeleteDocsList = solrIdDeleteDocs.get(solrServerUrl);
+									solrIdDeleteDocsList.add(solr);
+									solrIdDeleteDocs.put(solrServerUrl,solrIdDeleteDocsList);
+
+									if(deleteDocsList.size() == documentsPerRequest){
+										Logger.debug(SolrQueueJob.class,"Sending Delete Document(s) group request to Solr");
+										try {
+											Logger.debug(SolrQueueJob.class,"Document(s) to Delete: "+deleteDocsList.size());
+											SolrUtil.deleteFromSolrIndexById(solrServerUrl,deleteDocsList);
+											int deleteCounter = 0;
+											for(Map<String,Object> solrO : solrIdDeleteDocsList){
+												solrAPI.deleteElementFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()));//delete from table
+												deleteCounter++;
+											}
+											deleteDocsList.clear();
+											deleteDocs.remove(solrServerUrl);
+											solrIdDeleteDocsList.clear();
+											solrIdDeleteDocs.remove(solrServerUrl);
+											Logger.debug(SolrQueueJob.class,"Document(s) Deleted: "+deleteCounter);										
+										}catch(Exception e){
+											Logger.debug(SolrQueueJob.class,e.getMessage(),e);
+											Logger.debug(SolrQueueJob.class,"Document(s) not Deleted: "+deleteDocsList.size());
+											for(Map<String,Object> solrO : solrIdDeleteDocsList){
+												solrAPI.updateElementStatusFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()),new Date(),(Integer.parseInt(solrO.get("num_of_tries").toString())+1), true, "An error occurs trying to delete this assets in the Solr Index. ERROR: "+e);
+											}
+											deleteDocsList.clear();
+											deleteDocs.remove(solrServerUrl);
+											solrIdDeleteDocsList.clear();
+											solrIdDeleteDocs.remove(solrServerUrl);
+											break;
+										}
+									}
+								}								
 							}							
 						}catch(Exception b){
 							Logger.debug(SolrQueueJob.class,b.getMessage(),b);
@@ -347,59 +378,66 @@ public class SolrQueueJob implements StatefulJob {
 					if(addDocs.size() > 0 ){
 						/* Add or update index element*/
 						Logger.debug(SolrQueueJob.class,"Sending Add/Update Document(s) group request to Solr");
-						try {
-							Logger.debug(SolrQueueJob.class,"Document(s) to Add/Update: "+addDocs.size());
-							for(int server=0; server < serversNumber; server++ ){
-								String solrServerUrl = pluginAPI.loadProperty(pluginId, "com.dotcms.solr."+server+".SOLR_SERVER");
-								SolrUtil.addToSolrIndex(solrServerUrl, addDocs);
+						for(String solrServerUrl : addDocs.keySet()){
+							Collection<SolrInputDocument> addDocsList = addDocs.get(solrServerUrl);
+							List<Map<String,Object>> solrIdAddDocsList = solrIdAddDocs.get(solrServerUrl);
+							try {
+								Logger.debug(SolrQueueJob.class,"Document(s) to Add/Update: "+addDocsList.size());
+								SolrUtil.addToSolrIndex(solrServerUrl,addDocsList);
+
+								int addCounter = 0;
+								for(Map<String,Object> solrO : solrIdAddDocsList){
+									solrAPI.deleteElementFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()));//delete from table	
+									addCounter++;
+								}
+								addDocsList.clear();
+								addDocs.remove(solrServerUrl);
+								solrIdAddDocsList.clear();
+								solrIdAddDocs.remove(solrServerUrl);
+								Logger.debug(SolrQueueJob.class,"Document(s) Added/Updated: "+addCounter);
+							}catch(Exception e){
+								Logger.debug(SolrQueueJob.class,e.getMessage(),e);
+								Logger.debug(SolrQueueJob.class,"Document(s) not Added/Updated: "+addDocsList.size());
+								for(Map<String,Object> solrO : solrIdAddDocsList){
+									solrAPI.updateElementStatusFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()),new Date(),(Integer.parseInt(solrO.get("num_of_tries").toString())+1), true, "An error occurs trying to add/update this assets in the Solr Index. ERROR: "+e);
+								}
+								addDocsList.clear();
+								addDocs.remove(solrServerUrl);
+								solrIdAddDocsList.clear();
+								solrIdAddDocs.remove(solrServerUrl);
 							}
-							int addCounter = 0;
-							for(Map<String,Object> solrO : solrIdAddDocs){
-								solrAPI.deleteElementFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()));//delete from table	
-								addCounter++;
-							}
-							addDocs.clear();
-							solrIdAddDocs.clear();
-							Logger.debug(SolrQueueJob.class,"Document(s) Added/Updated: "+addCounter);
-						}catch(Exception e){
-							Logger.debug(SolrQueueJob.class,e.getMessage(),e);
-							int addCounter = 0;
-							Logger.debug(SolrQueueJob.class,"Document(s) not Added/Updated: "+addDocs.size());
-							for(Map<String,Object> solrO : solrIdAddDocs){
-								solrAPI.updateElementStatusFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()),new Date(),(Integer.parseInt(solrO.get("num_of_tries").toString())+1), true, "An error occurs trying to add/update this assets in the Solr Index. ERROR: "+e);
-								addCounter++;
-							}
-							addDocs.clear();
-							solrIdAddDocs.clear();
-						}
+						}						
 					}
 					if(deleteDocs.size() > 0){
 						Logger.debug(SolrQueueJob.class,"Sending Delete Document(s) group request to Solr");
-						try {
-							Logger.debug(SolrQueueJob.class,"Document(s) to Delete: "+deleteDocs.size());
-							for(int server=0; server < serversNumber; server++ ){
-								String solrServerUrl = pluginAPI.loadProperty(pluginId, "com.dotcms.solr."+server+".SOLR_SERVER");
-								SolrUtil.deleteFromSolrIndexById(solrServerUrl, deleteDocs);
+						for(String solrServerUrl : deleteDocs.keySet()){
+							List<String> deleteDocsList = deleteDocs.get(solrServerUrl);
+							List<Map<String,Object>> solrIdDeleteDocsList = solrIdDeleteDocs.get(solrServerUrl);
+							try {
+								Logger.debug(SolrQueueJob.class,"Document(s) to Delete: "+deleteDocsList.size());
+								SolrUtil.deleteFromSolrIndexById(solrServerUrl, deleteDocsList);
+								int deleteCounter = 0;
+								for(Map<String,Object> solrO : solrIdDeleteDocsList){
+									solrAPI.deleteElementFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()));//delete from table
+									deleteCounter++;
+								}
+								deleteDocsList.clear();
+								deleteDocs.remove(solrServerUrl);
+								solrIdDeleteDocsList.clear();
+								solrIdDeleteDocs.remove(solrServerUrl);
+								Logger.debug(SolrQueueJob.class,"Document(s) Deleted: "+deleteCounter);										
+							}catch(Exception e){
+								Logger.debug(SolrQueueJob.class,e.getMessage(),e);
+								Logger.debug(SolrQueueJob.class,"Document(s) not Deleted: "+deleteDocsList.size());
+								for(Map<String,Object> solrO : solrIdDeleteDocsList){
+									solrAPI.updateElementStatusFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()),new Date(),(Integer.parseInt(solrO.get("num_of_tries").toString())+1), true, "An error occurs trying to delete this assets in the Solr Index. ERROR: "+e);
+								}
+								deleteDocsList.clear();
+								deleteDocs.remove(solrServerUrl);
+								solrIdDeleteDocsList.clear();
+								solrIdDeleteDocs.remove(solrServerUrl);
 							}
-							int deleteCounter = 0;
-							for(Map<String,Object> solrO : solrIdDeleteDocs){
-								solrAPI.deleteElementFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()));//delete from table
-								deleteCounter++;
-							}
-							deleteDocs.clear();
-							solrIdDeleteDocs.clear();
-							Logger.debug(SolrQueueJob.class,"Document(s) Deleted: "+deleteCounter);										
-						}catch(Exception e){
-							Logger.debug(SolrQueueJob.class,e.getMessage(),e);
-							int deleteCounter = 0;
-							Logger.debug(SolrQueueJob.class,"Document(s) not Deleted: "+deleteDocs.size());
-							for(Map<String,Object> solrO : solrIdDeleteDocs){
-								solrAPI.updateElementStatusFromSolrQueueTable(Long.parseLong(solrO.get("id").toString()),new Date(),(Integer.parseInt(solrO.get("num_of_tries").toString())+1), true, "An error occurs trying to delete this assets in the Solr Index. ERROR: "+e);
-								deleteCounter++;
-							}
-							deleteDocs.clear();
-							solrIdDeleteDocs.clear();
-						}
+						}						
 					}
 
 				}

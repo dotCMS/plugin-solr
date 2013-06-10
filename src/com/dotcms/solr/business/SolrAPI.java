@@ -55,11 +55,10 @@ public abstract class SolrAPI {
 	/**
 	 * Get the total of all the elements in the solr_queue table that could be processes because some error
 	 * @param condition WHERE condition
-	 * @param orderBy ORDER BY condition
 	 * @return List<Map<String,Object>>
 	 * @throws DotSolrException
 	 */
-	public abstract List<Map<String,Object>> getQueueErrorsCounter(String condition, String orderBy) throws DotSolrException;
+	public abstract List<Map<String,Object>> getQueueErrorsCounter(String condition) throws DotSolrException;
 	
 	/**
 	 * Get a list of all the elements in the solr_queue table that could be processes because some error
@@ -75,11 +74,10 @@ public abstract class SolrAPI {
 	/**
 	 * Get the total of All the Assets in the solr_queue table paginated
 	 * @param condition WHERE condition
-	 * @param orderBy ORDER BY condition
 	 * @return List<Map<String,Object>>
 	 * @throws DotSolrException
 	 */
-	public abstract List<Map<String,Object>> getSolrQueueContentletsCounter(String condition, String orderBy) throws DotSolrException;
+	public abstract List<Map<String,Object>> getSolrQueueContentletsCounter(String condition) throws DotSolrException;
 	
 	/**
 	 * Get All the Assets in the solr_queue table paginated
@@ -95,11 +93,10 @@ public abstract class SolrAPI {
 	/**
 	 * Get the total of Assets not processed yet to update the Solr index paginated
 	 * @param condition WHERE condition
-	 * @param orderBy ORDER BY condition
 	 * @return List<Map<String,Object>>
 	 * @throws DotSolrException
 	 */
-	public abstract List<Map<String,Object>> getSolrQueueContentletToProcessCounter(String condition, String orderBy) throws DotSolrException;
+	public abstract List<Map<String,Object>> getSolrQueueContentletToProcessCounter(String condition) throws DotSolrException;
 	
 	/**
 	 * Get the Assets not processed yet to update the Solr index paginated
