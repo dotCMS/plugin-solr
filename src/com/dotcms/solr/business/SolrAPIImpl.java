@@ -74,7 +74,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addObject(con.getIdentifier());
 				dc.addObject(con.getLanguageId());
 				dc.addParam(new Date());
-				dc.addParam(DbConnectionFactory.getDBFalse());				
+				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();				
 			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
 				dc.setSQL(MSINSERTSOLRSQL);
@@ -82,7 +82,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addObject(con.getIdentifier());
 				dc.addObject(con.getLanguageId());
 				dc.addParam(new Date());
-				dc.addParam(DbConnectionFactory.getDBFalse());				
+				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();				
 			}else{
 				dc.setSQL(OCLINSERTSOLRSQL);
@@ -90,7 +90,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addObject(con.getIdentifier());
 				dc.addObject(con.getLanguageId());
 				dc.addParam(new Date());
-				dc.addParam(DbConnectionFactory.getDBFalse());				
+				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();				
 			}
 			HibernateUtil.commitTransaction();			
@@ -136,7 +136,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addObject(con.getIdentifier());
 				dc.addObject(con.getLanguageId());
 				dc.addParam(new Date());
-				dc.addParam(DbConnectionFactory.getDBFalse());				
+				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();				
 			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
 				dc.setSQL(MSDELETESOLRSQL);
@@ -144,7 +144,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addObject(con.getIdentifier());
 				dc.addObject(con.getLanguageId());
 				dc.addParam(new Date());
-				dc.addParam(DbConnectionFactory.getDBFalse());				
+				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();				
 			}else{
 				dc.setSQL(OCLDELETESOLRSQL);
@@ -152,7 +152,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addObject(con.getIdentifier());
 				dc.addObject(con.getLanguageId());
 				dc.addParam(new Date());
-				dc.addParam(DbConnectionFactory.getDBFalse());				
+				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();
 			}
 			HibernateUtil.commitTransaction();
@@ -188,7 +188,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addObject(identifier);
 				dc.addObject(languageId);
 				dc.addParam(new Date());
-				dc.addParam(DbConnectionFactory.getDBFalse());				
+				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();				
 			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
 				dc.setSQL(MSDELETESOLRSQL);
@@ -196,7 +196,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addObject(identifier);
 				dc.addObject(languageId);
 				dc.addParam(new Date());
-				dc.addParam(DbConnectionFactory.getDBFalse());				
+				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();				
 			}else{
 				dc.setSQL(OCLDELETESOLRSQL);
@@ -204,7 +204,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addObject(identifier);
 				dc.addObject(languageId);
 				dc.addParam(new Date());
-				dc.addParam(DbConnectionFactory.getDBFalse());				
+				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();
 			}
 			HibernateUtil.commitTransaction();

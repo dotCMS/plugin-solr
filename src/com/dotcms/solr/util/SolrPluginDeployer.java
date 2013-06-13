@@ -45,10 +45,10 @@ public class SolrPluginDeployer implements PluginDeployer{
 		try {
 			boolean dropAndRecreateTable = Boolean.parseBoolean(pluginAPI.loadProperty(pluginId, "com.dotcms.solr.DROP_AND_RECREATE_TABLE"));
 			if(dropAndRecreateTable){
-				SolrUtil.deleteSolrTable();				
+				SolrUtil.deleteSolrTable();	
+				SolrUtil.createSolrTable();
 			}
-			SolrUtil.createSolrTable();
-			SolrUtil.UpdateHostTable();
+						
 			String jobName = pluginAPI.loadProperty(pluginId, "quartz.job.name");
 			String jobGroup = pluginAPI.loadProperty(pluginId, "quartz.job.group");
 			String jobDescription = pluginAPI.loadProperty(pluginId, "quartz.job.description");
@@ -57,6 +57,7 @@ public class SolrPluginDeployer implements PluginDeployer{
 
 			CronScheduledTask cronScheduledTask = new CronScheduledTask(jobName, jobGroup, jobDescription, javaClassname, new Date(), null, CronTrigger.MISFIRE_INSTRUCTION_FIRE_ONCE_NOW, new HashMap<String, Object>(), cronExpression);
 			QuartzUtils.scheduleTask(cronScheduledTask);
+			SolrUtil.UpdateHostTable();
 			return true;
 		}catch(Exception e){
 			Logger.error(SolrPluginDeployer.class,e.getMessage(),e);			

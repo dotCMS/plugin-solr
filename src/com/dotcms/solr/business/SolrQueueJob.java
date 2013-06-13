@@ -94,12 +94,8 @@ public class SolrQueueJob implements StatefulJob {
 				if(solrQueue.size() > 0){
 					Map<String,Collection<SolrInputDocument>> addDocs = new HashMap<String,Collection<SolrInputDocument>>();
 					Map<String,List<Map<String,Object>>> solrIdAddDocs = new HashMap<String,List<Map<String,Object>>>();
-					//Collection<SolrInputDocument> addDocs = new ArrayList<SolrInputDocument>(); 
-					//List<Map<String,Object>> solrIdAddDocs = new ArrayList<Map<String,Object>>(); 
 					Map<String,List<String>> deleteDocs = new HashMap<String,List<String>>();
 					Map<String,List<Map<String,Object>>> solrIdDeleteDocs = new HashMap<String,List<Map<String,Object>>>();
-					//List<String> deleteDocs = new ArrayList<String>(); 
-					//List<Map<String,Object>> solrIdDeleteDocs = new ArrayList<Map<String,Object>>(); 
 					Map<String,Long> languages = new HashMap<String,Long>();
 
 					for(Map<String,Object> solr : solrQueue){
@@ -121,7 +117,8 @@ public class SolrQueueJob implements StatefulJob {
 									doc.addField("id", con.getIdentifier());
 									doc.addField("inode", con.getInode());
 									doc.addField("modUser", con.getModUser());
-									String modDate = UtilMethods.dateToHTMLDate(con.getModDate(), "yyyy-MM-dd")+"T"+ UtilMethods.dateToHTMLDate(con.getModDate(), "HH:mm:ss.S")+"Z";
+									//String modDate = UtilMethods.dateToHTMLDate(con.getModDate(), "yyyy-MM-dd")+"T"+ UtilMethods.dateToHTMLDate(con.getModDate(), "HH:mm:ss.S")+"Z";
+									String modDate = SolrUtil.getGenericFormattedDateText(con.getModDate(), SolrUtil.SOLR_DEFAULT_DATE_FORMAT);
 									doc.addField("modDate",modDate);
 									doc.addField("host", con.getHost());
 									doc.addField("folder", con.getFolder());									
@@ -147,7 +144,8 @@ public class SolrQueueJob implements StatefulJob {
 											if(f.getFieldType().equals(Field.FieldType.DATE.toString()) || f.getFieldType().equals(Field.FieldType.DATE_TIME.toString())){
 												String date = "";
 												if(UtilMethods.isSet(value)){
-													date = UtilMethods.dateToHTMLDate((Date)value, "yyyy-MM-dd")+"T"+ UtilMethods.dateToHTMLDate((Date)value, "HH:mm:ss.S")+"Z";
+													//date = UtilMethods.dateToHTMLDate((Date)value, "yyyy-MM-dd")+"T"+ UtilMethods.dateToHTMLDate((Date)value, "HH:mm:ss.S")+"Z";
+													date = SolrUtil.getFormattedUTCDateText((Date) value, SolrUtil.SOLR_DEFAULT_DATE_FORMAT);
 												}
 												doc.addField(solrFieldName, date);
 											}else if(f.getFieldType().equals(Field.FieldType.FILE.toString()) || f.getFieldType().equals(Field.FieldType.IMAGE.toString())){

@@ -5,9 +5,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.net.MalformedURLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TimeZone;
 
 import javax.activation.MimetypesFileTypeMap;
 
@@ -25,6 +27,7 @@ import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -74,7 +77,65 @@ import edu.emory.mathcs.backport.java.util.Arrays;
 public class SolrUtil {	
 
 	/**
+	 * Generate a chanel to communicate with a solr server. 
+	 * This Methods was provided by S&P
+	 * 
+	 * @param SolrServerUrl
+	 * @return CommonsHttpSolrServer
+	 * @throws IOException
+	 */
+	public static CommonsHttpSolrServer getHttpSolrServer(String SolrServerUrl)	throws IOException {
+		// configure a server object with actual solr values.
+		CommonsHttpSolrServer solrServer = new CommonsHttpSolrServer(
+				SolrServerUrl);
+		solrServer.setParser(new XMLResponseParser());
+		solrServer.setSoTimeout(5000);
+		solrServer.setConnectionTimeout(5000);
+		return solrServer;
+	}
+
+	/**
+	 * Validate if the Solr servers is responding
+	 * This Methods was provided by S&P
+	 * 
+	 * @param solrServer solr server url
+	 * @return true if the servers is responding, false is the server is not accessible
+	 */
+	public static boolean checkSolrServerByPing(CommonsHttpSolrServer solrServer) {
+		// configure a server object with actual solr values.
+		try {
+			SolrPingResponse solrPingResponse = solrServer.ping();
+			int solrPingResponseStatus = solrPingResponse.getStatus();
+			if (solrPingResponseStatus == 0)
+				return true;
+		} catch (Exception exception) {
+			Logger.debug(SolrUtil.class, "Ping Failed On the Server : "+ solrServer.getBaseURL(), exception);
+		}
+		return false;
+	}
+
+	/**
+	 * Adding documents collection to Solr Index.
+	 * This method was update in colaboration with S&P
+	 * 
+	 * @param SolrServerUrl Solr Server Url
+	 * @param docs Collection<SolrInputDocument> collection of elements to include
+	 * @throws SolrServerException
+	 * @throws IOException
+	 */
+	public static void addToSolrIndex(CommonsHttpSolrServer solrServer,	Collection<SolrInputDocument> docs) throws SolrServerException,	IOException {
+		/* Add collection to solr index */
+		UpdateResponse rsp = solrServer.add(docs);
+		Logger.info(SolrUtil.class, "ADDING SORL INDEX: " + rsp);
+		/* Commit collection to solr index */
+		UpdateResponse rsp2 = solrServer.commit();
+		Logger.info(SolrUtil.class, "COMMITING SORL INDEX: " + rsp2);
+	}
+
+	/**
 	 * Adding SolrInputDocument to Solr Index
+	 * This method was update in colaboration with S&P
+	 * 
 	 * @param SolrServerUrl Solr Server Url
 	 * @param doc SolrInputDocument to include
 	 * @return boolean, true if the element were added to the Solr index
@@ -82,76 +143,108 @@ public class SolrUtil {
 	 * @throws IOException
 	 */
 	public static void addToSolrIndex(String SolrServerUrl, SolrInputDocument doc) throws SolrServerException, IOException {		
-		CommonsHttpSolrServer server = new CommonsHttpSolrServer(SolrServerUrl);
-		server.setParser(new XMLResponseParser());
-		/*Add collection to solr index*/
-		Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
-		docs.add( doc );			
-		UpdateResponse rsp = server.add( docs );
-		Logger.debug(SolrUtil.class, "ADDING SORL INDEX: "+rsp);
-		/*Commit collection to solr index*/
-		UpdateResponse rsp2 = server.commit();		
-		Logger.debug(SolrUtil.class, "COMMITING SORL INDEX: "+rsp2);		
+		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
+		/* Add collection to solr index */
+		if (checkSolrServerByPing(server)) {
+			Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+			docs.add(doc);
+			addToSolrIndex(server, docs);
+		}
 	}
 
 	/**
 	 * Adding documents collection to Solr Index
+	 * This method was update in colaboration with S&P
+	 * 
 	 * @param SolrServerUrl Solr Server Url
 	 * @param docs Collection<SolrInputDocument> collection of elements to include
 	 * @throws SolrServerException
 	 * @throws IOException
 	 */
 	public static void addToSolrIndex(String SolrServerUrl, Collection<SolrInputDocument> docs) throws SolrServerException, IOException {
-		CommonsHttpSolrServer server = new CommonsHttpSolrServer(SolrServerUrl);
-		server.setParser(new XMLResponseParser());
-		/*Add collection to solr index*/
-		UpdateResponse rsp = server.add( docs );
-		Logger.debug(SolrUtil.class, "ADDING SORL INDEX: "+rsp);
-		/*Commit collection to solr index*/
-		UpdateResponse rsp2 = server.commit();		
-		Logger.debug(SolrUtil.class, "COMMITING SORL INDEX: "+rsp2);		
+		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
+		/*Add collection to solr index*/		
+		if (checkSolrServerByPing(server)) {
+			addToSolrIndex(server, docs);
+		}		
 	}
 
 	/**
+	 * Deleting document from Solr Index.
+	 * This method was update in colaboration with S&P
+	 * 
+	 * @param SolrServerUrl Solr Server Url
+	 * @param id ID of the element to delete
+	 * @throws SolrServerException
+	 * @throws IOException
+	 */
+	public static void deleteFromSolrIndexById(CommonsHttpSolrServer solrServer, String id) throws SolrServerException, IOException {
+		/* Delete collection from solr index */
+		UpdateResponse rsp = solrServer.deleteById(id);
+		Logger.debug(SolrUtil.class, "DELETING SORL INDEX: " + rsp);
+		/* Commit collection to solr index */
+		UpdateResponse rsp2 = solrServer.commit();
+		Logger.debug(SolrUtil.class, "COMMITING SORL INDEX: " + rsp2);
+	}
+
+
+	/**
 	 * Deleting document from Solr Index
+	 * This method was update in colaboration with S&P
+	 * 
 	 * @param SolrServerUrl Solr Server Url
 	 * @param id ID of the element to delete 
 	 * @throws SolrServerException
 	 * @throws IOException
 	 */
 	public static void deleteFromSolrIndexById(String SolrServerUrl, String id) throws SolrServerException, IOException {
-		CommonsHttpSolrServer server = new CommonsHttpSolrServer(SolrServerUrl);
-		server.setParser(new XMLResponseParser());
-		/*Add collection to solr index*/
-		UpdateResponse rsp = server.deleteById(id);
-		Logger.debug(SolrUtil.class, "DELETING SORL INDEX: "+rsp);
-		/*Commit collection to solr index*/
-		UpdateResponse rsp2 = server.commit();	
-		Logger.debug(SolrUtil.class, "COMMITING SORL INDEX: "+rsp2);		
+		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
+		/*Delete collection from solr index*/
+		if (checkSolrServerByPing(server)) {
+			deleteFromSolrIndexById(server, id);
+		}		
+	}
+
+	/**
+	 * Deleting document from Solr Index.
+	 * This method was update in colaboration with S&P
+	 * 
+	 * @param SolrServerUrl Solr Server Url
+	 * @param ids List od ID's of the elements to delete
+	 * @throws SolrServerException
+	 * @throws IOException
+	 */
+	public static boolean deleteFromSolrIndexById(CommonsHttpSolrServer solrServer, List<String> ids) {
+		try {
+			/* Add collection to solr index */
+			UpdateResponse rsp = solrServer.deleteById(ids);
+			Logger.debug(SolrUtil.class, "DELETING SORL INDEX: " + rsp);
+			/* Commit collection to solr index */
+			UpdateResponse rsp2 = solrServer.commit();
+			Logger.debug(SolrUtil.class, "COMMITING SORL INDEX: " + rsp2);
+			return true;
+		} catch (Exception e) {
+			Logger.error(SolrUtil.class, e.getMessage(), e);
+			return false;
+		}
 	}
 
 	/**
 	 * Deleting document from Solr Index
+	 * This method was update in colaboration with S&P
+	 * 
 	 * @param SolrServerUrl Solr Server Url
 	 * @param ids List od ID's of the elements to delete 
 	 * @throws SolrServerException
 	 * @throws IOException
 	 */
-	public static boolean deleteFromSolrIndexById(String SolrServerUrl, List<String> ids) {
-		try {
-			CommonsHttpSolrServer server = new CommonsHttpSolrServer(SolrServerUrl);
-			server.setParser(new XMLResponseParser());
-			/*Add collection to solr index*/
-			UpdateResponse rsp = server.deleteById(ids);
-			Logger.debug(SolrUtil.class, "DELETING SORL INDEX: "+rsp);
-			/*Commit collection to solr index*/
-			UpdateResponse rsp2 = server.commit();	
-			Logger.debug(SolrUtil.class, "COMMITING SORL INDEX: "+rsp2);
-			return true;
-		} catch (Exception e) {
-			Logger.error(SolrUtil.class, e.getMessage(), e);
-			return false;
-		} 
+	public static boolean deleteFromSolrIndexById(String SolrServerUrl, List<String> ids) throws IOException {
+		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
+		/* Add collection to solr index */
+		if (checkSolrServerByPing(server)) {
+			return deleteFromSolrIndexById(server, ids);
+		}
+		return false;
 	}
 
 	/**
@@ -223,21 +316,22 @@ public class SolrUtil {
 	/**
 	 * Execute a search in the Solr index, passing all the parameter directly in a url query.
 	 * For example, query:"indent=on&version=2.2&q=%2Bcat%3Aelectronics&fq=&start=0&rows=20&fl=*%2Cscore&qt=&wt=&explainOther=&hl.fl="
+	 * 
 	 * @param SolrServerUrl Solr Server Url
 	 * @param query Solr query
 	 * @return QueryResponse
 	 * @throws SolrServerException
-	 * @throws MalformedURLException
+	 * @throws IOException 
 	 */
-	public static QueryResponse executeSolrGenericSearch(String SolrServerUrl, String query) throws SolrServerException, MalformedURLException {
-		CommonsHttpSolrServer server = new CommonsHttpSolrServer(SolrServerUrl);
-		server.setParser(new XMLResponseParser());
+	public static QueryResponse executeSolrGenericSearch(String SolrServerUrl, String query) throws SolrServerException, IOException {
+		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
 		SolrParams solrParams = SolrRequestParsers.parseQueryString(query);
 		return server.query(solrParams);
 	}
 
 	/**
 	 * Execute a search in the specified Solr index using a url parameter 
+	 * 
 	 * @param SolrServerUrl Solr Server Url
 	 * @param start initial value to return
 	 * @param rows number of row to return
@@ -250,13 +344,12 @@ public class SolrUtil {
 	 * @param password Solr password (optional)
 	 * @return QueryResponse
 	 * @throws SolrServerException
-	 * @throws MalformedURLException
+	 * @throws IOException 
 	 */
 	public static QueryResponse executeURLSolrParamsSearch(String SolrServerUrl, int start, int rows, String queryType,String facet, String ident, String query, String myCollection, String username, String password)
-			throws SolrServerException, MalformedURLException {
+			throws SolrServerException, IOException {
 
-		CommonsHttpSolrServer server = new CommonsHttpSolrServer(SolrServerUrl);
-		server.setParser(new XMLResponseParser());
+		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
 
 		StringBuffer request = new StringBuffer();
 		if(UtilMethods.isSet(myCollection)){
@@ -288,6 +381,7 @@ public class SolrUtil {
 
 	/**
 	 * Execute a search in the specified Solr index using a ModifiableSolrParams
+	 * 
 	 * @param SolrServerUrl Solr Server Url
 	 * @param start initial value to return
 	 * @param rows number of row to return
@@ -300,13 +394,12 @@ public class SolrUtil {
 	 * @param password Solr password (optional)
 	 * @return QueryResponse
 	 * @throws SolrServerException
-	 * @throws MalformedURLException
+	 * @throws IOException 
 	 */
 	public static QueryResponse executeModifiableSolrParamsSearch(String SolrServerUrl, int start, int rows,String queryType, String facet, String ident, String query, String myCollection, String username, String password)
-			throws SolrServerException, MalformedURLException {
+			throws SolrServerException, IOException {
 
-		CommonsHttpSolrServer server = new CommonsHttpSolrServer(SolrServerUrl);
-		server.setParser(new XMLResponseParser());
+		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
 
 		ModifiableSolrParams solrParams = new ModifiableSolrParams();
 		if(UtilMethods.isSet(myCollection)){
@@ -337,6 +430,7 @@ public class SolrUtil {
 
 	/**
 	 * Execute a search in the specified Solr index using a SolrQuery
+	 * 
 	 * @param SolrServerUrl Solr Server Url
 	 * @param start initial value to return
 	 * @param rows number of row to return
@@ -349,12 +443,11 @@ public class SolrUtil {
 	 * @param password Solr password (optional)
 	 * @return QueryResponse
 	 * @throws SolrServerException
-	 * @throws MalformedURLException
+	 * @throws IOException 
 	 */
 	public static QueryResponse executeSolrQuerySearch(String SolrServerUrl, int start, int rows,String queryType, String facet, String ident, String query, String myCollection, String username, String password)
-			throws SolrServerException, MalformedURLException {
-		CommonsHttpSolrServer server = new CommonsHttpSolrServer(SolrServerUrl);
-		server.setParser(new XMLResponseParser());
+			throws SolrServerException, IOException {
+		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
 
 		SolrQuery solrQuery = new SolrQuery();
 		if(UtilMethods.isSet(myCollection)){
@@ -394,6 +487,7 @@ public class SolrUtil {
 
 	/**
 	 * Create dotcms Solr assets index table
+	 * 
 	 * @return boolean, true if the table was created successfully
 	 */
 	public static boolean createSolrTable(){
@@ -450,6 +544,7 @@ public class SolrUtil {
 
 	/**
 	 * Delete dotcms Solr assets index table
+	 * 
 	 * @return boolean, true if the table was created successfully
 	 */
 	public static boolean deleteSolrTable(){
@@ -483,6 +578,7 @@ public class SolrUtil {
 
 	/**
 	 * Validate if a FieldVariable is present in a FieldVariable List
+	 * 
 	 * @param list List<FieldVariable>
 	 * @param fieldVariableName Variable Name
 	 * @return boolean
@@ -503,6 +599,7 @@ public class SolrUtil {
 
 	/**
 	 * Validate if a FieldVariable is present in a FieldVariable List
+	 * 
 	 * @param list List<FieldVariable>
 	 * @param fieldVariableName List<FieldVariable> variable names
 	 * @return boolean
@@ -548,6 +645,7 @@ public class SolrUtil {
 
 	/**
 	 * Get all the existing parents for a category
+	 * 
 	 * @param cat child category
 	 * @param user current user
 	 * @return Set<Category>
@@ -571,6 +669,7 @@ public class SolrUtil {
 
 	/**
 	 * Check if the field contains the field attribute to modify the field name to use in Solr Index
+	 * 
 	 * @param list List<FieldVariable>
 	 * @param fieldAttribute String name of the field with the new field name to use in Solr index
 	 * @param defaultSolrFieldName String field velocity var name
@@ -588,6 +687,7 @@ public class SolrUtil {
 
 	/**
 	 * Returns a map with the given file's meta data
+	 * 
 	 * @param f Field
 	 * @param file
 	 * @return
@@ -652,6 +752,7 @@ public class SolrUtil {
 	 * For example, tiff:ImageLength = "height" for image files, so 
 	 * we return {"tiff:ImageLength", "height"} and both metadata
 	 * are written to our metadata field
+	 * 
 	 * @param key
 	 * @return
 	 */
@@ -667,10 +768,12 @@ public class SolrUtil {
 	private static Map<String, String[]> translateMeta = null;
 
 	/**
+	 * Return file parser
 	 * 
 	 * @param binFile
-	 * @return
+	 * @return Parser
 	 */
+	@SuppressWarnings("unchecked")
 	private static Parser getParser(File binFile) {
 		String mimeType =  new MimetypesFileTypeMap().getContentType(binFile);
 		String[] mimeTypes = Config.getStringArrayProperty("CONTENT_PARSERS_MIMETYPES");
@@ -689,6 +792,11 @@ public class SolrUtil {
 		return  new AutoDetectParser();
 	}	
 
+	/**
+	 * Translate meta inf
+	 * 
+	 * @return Map<String, String[]>
+	 */
 	private static Map<String, String[]> getTranslationMap(){
 		if(translateMeta ==null){
 			synchronized ("translateMeta".intern()) {
@@ -714,6 +822,7 @@ public class SolrUtil {
 
 	/**
 	 * Update the host structure including the Solr server field
+	 * 
 	 * @throws DotDataException 
 	 * @throws NumberFormatException 
 	 * @throws DotSecurityException 
@@ -731,7 +840,7 @@ public class SolrUtil {
 			solrServers.setVelocityVarName(SOLR_SERVER_FIELD_VAR_NAME);			
 			solrServers.setDefaultValue("");
 			String value="<select id=\"solrServersTemp\" name=\"solrServersTemp\" onChange=\"updateSolrServer(this)\" multiple=\"multiple\" >\n";
-			
+
 			int serversNumber = Integer.parseInt(pluginAPI.loadProperty(pluginId, "com.dotcms.solr.SOLR_SERVER_NUMBER"));
 			for(int server=0; server < serversNumber; server++ ){
 				String solrServerUrl = pluginAPI.loadProperty(pluginId, "com.dotcms.solr."+server+".SOLR_SERVER");
@@ -793,6 +902,7 @@ public class SolrUtil {
 
 	/**
 	 * Get the list of Solr servers associated with that content
+	 * 
 	 * @param con Contentlet
 	 * @param user 
 	 * @return List<String>
@@ -842,5 +952,52 @@ public class SolrUtil {
 		} else {
 			return "";
 		}
+	}
+
+	/**
+	 * Date Utils
+	 */
+	public static final String UTC_TIME_ZONE = "UTC";
+	public static final String SOLR_DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+
+	/**
+	 * Return the date string using the specified format
+	 * 
+	 * @param dateForReference
+	 * @param dateFormat
+	 * @param timeZone
+	 * @return String
+	 */
+	public static String getFormattedDateText(Date dateForReference, String dateFormat, String timeZone) {
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat(dateFormat);
+		if (timeZone != null && timeZone.trim().length() > 0) {
+			TimeZone timeZoneForReference = TimeZone.getTimeZone(timeZone);
+			if (timeZoneForReference != null) {
+				simpleDateFormat.setTimeZone(timeZoneForReference);
+			}
+		}
+		return simpleDateFormat.format(dateForReference);
+	}
+
+	/**
+	 * Return the date string using the generic format
+	 * 
+	 * @param dateForReference
+	 * @param dateFormat
+	 * @return String
+	 */
+	public static String getGenericFormattedDateText(Date dateForReference,	String dateFormat) {
+		return getFormattedDateText(dateForReference, dateFormat, null);
+	}
+
+	/**
+	 * Return the date string using the UTCDate format
+	 * 
+	 * @param dateForReference
+	 * @param dateFormat
+	 * @return String
+	 */
+	public static String getFormattedUTCDateText(Date dateForReference,	String dateFormat) {
+		return getFormattedDateText(dateForReference, dateFormat, UTC_TIME_ZONE);
 	}
 }
