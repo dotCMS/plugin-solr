@@ -88,19 +88,19 @@ Plugin Github Tags
 ------------------
 These plugin have two versions:
 
-1.  Tag plugin-solr-1.0-dotcms-2.x
+1)  Tag plugin-solr-1.0-dotcms-2.x
 
 This version sends all the content to all the Solr servers specified in the plugin.properties file. You don't have the option of selecting Solr servers per host.
 To obtain this version you need to git clone the master of the plugin and then run this command:
 git checkout plugin-solr-1.0-dotcms-2.x
 
-2.  Tag plugin-solr-2.0-dotcms-2.x
+2)  Tag plugin-solr-2.0-dotcms-2.x
 
 This version has the option to select Solr servers per host.
 To obtain this version you need to git clone the master of the plugin and then run this command:
 git checkout plugin-solr-2.0-dotcms-2.x
 
-3.  Tag plugin-solr-2.1-dotcms-2.x
+3)  Tag plugin-solr-2.1-dotcms-2.x
 This version has the option to select Solr servers per host. It also reduces the errors caused when the solr server are down by validating if the solr server respond to a ping. When a Solr server don't respond to the ping, the request is not sent to that solr server.  This version also includes the fix for errors with time zones providing a generic time zone conversion to process date fields.
 To obtain this version you need to git clone the master of the plugin and then run this command:
 git checkout plugin-solr-2.1-dotcms-2.x
