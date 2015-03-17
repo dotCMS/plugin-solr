@@ -320,7 +320,7 @@ public class SolrQueueJob implements StatefulJob {
 								languages.put((String)solr.get("asset_identifier"), Long.parseLong(solr.get("language_id").toString()));
 
 								long languageId = languages.get(id); 
-								Contentlet con = conAPI.findContentletByIdentifier(id, true, languageId, user, false);
+								Contentlet con = conAPI.findContentletByIdentifier(id, false, languageId, user, false);
 
 								for(String solrServerUrl : SolrUtil.getContentletSolrServers(con,user)){
 									if(!deleteDocs.containsKey(solrServerUrl)){
