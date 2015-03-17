@@ -59,7 +59,7 @@ public class SolrAPIImpl extends SolrAPI{
 		try{
 			HibernateUtil.startTransaction();
 			DotConnect dc = new DotConnect();
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				/*Validate if the table doesn't exist then is created*/
 				dc.setSQL(PGINSERTSOLRSQL);
 				dc.addParam(SolrAPI.ADD_OR_UPDATE_SOLR_ELEMENT);
@@ -68,7 +68,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addParam(new Date());
 				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();	
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYINSERTSOLRSQL);
 				dc.addParam(SolrAPI.ADD_OR_UPDATE_SOLR_ELEMENT);
 				dc.addObject(con.getIdentifier());
@@ -76,7 +76,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addParam(new Date());
 				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();				
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSINSERTSOLRSQL);
 				dc.addParam(SolrAPI.ADD_OR_UPDATE_SOLR_ELEMENT);
 				dc.addObject(con.getIdentifier());
@@ -121,7 +121,7 @@ public class SolrAPIImpl extends SolrAPI{
 		try{
 			HibernateUtil.startTransaction();
 			DotConnect dc = new DotConnect();
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				/*Validate if the table doesn't exist then is created*/
 				dc.setSQL(PGDELETESOLRSQL);
 				dc.addParam(SolrAPI.DELETE_SOLR_ELEMENT);
@@ -130,7 +130,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addParam(new Date());
 				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();	
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYDELETESOLRSQL);
 				dc.addParam(SolrAPI.DELETE_SOLR_ELEMENT);
 				dc.addObject(con.getIdentifier());
@@ -138,7 +138,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addParam(new Date());
 				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();				
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSDELETESOLRSQL);
 				dc.addParam(SolrAPI.DELETE_SOLR_ELEMENT);
 				dc.addObject(con.getIdentifier());
@@ -173,7 +173,7 @@ public class SolrAPIImpl extends SolrAPI{
 		try{
 			HibernateUtil.startTransaction();
 			DotConnect dc = new DotConnect();
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				/*Validate if the table doesn't exist then is created*/
 				dc.setSQL(PGDELETESOLRSQL);
 				dc.addParam(SolrAPI.DELETE_SOLR_ELEMENT);
@@ -182,7 +182,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addParam(new Date());
 				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();	
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYDELETESOLRSQL);
 				dc.addParam(SolrAPI.DELETE_SOLR_ELEMENT);
 				dc.addObject(identifier);
@@ -190,7 +190,7 @@ public class SolrAPIImpl extends SolrAPI{
 				dc.addParam(new Date());
 				dc.addParam(Boolean.parseBoolean(DbConnectionFactory.getDBFalse()));				
 				dc.loadResult();				
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSDELETESOLRSQL);
 				dc.addParam(SolrAPI.DELETE_SOLR_ELEMENT);
 				dc.addObject(identifier);
@@ -233,11 +233,11 @@ public class SolrAPIImpl extends SolrAPI{
 	public List<Map<String,Object>> getQueueErrors() throws DotSolrException {
 		try{
 			DotConnect dc = new DotConnect();
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				dc.setSQL(PSGETENTRIESWITHERRORS);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYGETENTRIESWITHERRORS);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSGETENTRIESWITHERRORS);
 			}else{
 				dc.setSQL(OCLGETENTRIESWITHERRORS);
@@ -268,11 +268,11 @@ public class SolrAPIImpl extends SolrAPI{
 			if(UtilMethods.isSet(condition)){
 				query = " AND "+condition;
 			}
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				dc.setSQL(PSGETPAGINATEDENTRIESCOUNTERWITHERRORS+query);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYGETPAGINATEDENTRIESCOUNTERWITHERRORS+query);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSGETPAGINATEDENTRIESCOUNTERWITHERRORS+query);
 			}else{
 				dc.setSQL(OCLGETPAGINATEDENTRIESCOUNTERWITHERRORS+query);
@@ -309,11 +309,11 @@ public class SolrAPIImpl extends SolrAPI{
 			if(UtilMethods.isSet(orderBy)){
 				query += " ORDER BY "+orderBy;
 			}
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				dc.setSQL(PSGETPAGINATEDENTRIESWITHERRORS+query);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYGETPAGINATEDENTRIESWITHERRORS+query);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSGETPAGINATEDENTRIESWITHERRORS+query);
 			}else{
 				dc.setSQL(OCLGETPAGINATEDENTRIESWITHERRORS+query);
@@ -342,11 +342,11 @@ public class SolrAPIImpl extends SolrAPI{
 	public List<Map<String,Object>> getSolrQueueContentletToProcess() throws DotSolrException{
 		try{
 			DotConnect dc = new DotConnect();
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				dc.setSQL(PSGETASSETSTOINDEX);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYGETASSETSTOINDEX);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSGETASSETSTOINDEX);
 			}else{
 				dc.setSQL(OCLGETASSETSTOINDEX);
@@ -378,11 +378,11 @@ public class SolrAPIImpl extends SolrAPI{
 				query = " WHERE "+condition;
 			}
 			
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				dc.setSQL(PSGETQUEUEPAGINATEDASSETSCOUNTERTOINDEX+query);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYGETQUEUEPAGINATEDASSETSCOUNTERTOINDEX+query);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSGETQUEUEPAGINATEDASSETSCOUNTERTOINDEX+query);
 			}else{
 				dc.setSQL(OCLGETQUEUEPAGINATEDASSETSCOUNTERTOINDEX+query);				
@@ -419,11 +419,11 @@ public class SolrAPIImpl extends SolrAPI{
 			if(UtilMethods.isSet(orderBy)){
 				query += " ORDER BY "+orderBy;
 			}
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				dc.setSQL(PSGETQUEUEPAGINATEDASSETSTOINDEX+query);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYGETQUEUEPAGINATEDASSETSTOINDEX+query);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSGETQUEUEPAGINATEDASSETSTOINDEX+query);
 			}else{
 				dc.setSQL(OCLGETQUEUEPAGINATEDASSETSTOINDEX+query);				
@@ -456,11 +456,11 @@ public class SolrAPIImpl extends SolrAPI{
 			if(UtilMethods.isSet(condition)){
 				query = " AND "+condition;
 			}
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				dc.setSQL(PSGETPAGINATEDASSETSCOUNTERTOINDEX+query);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYGETPAGINATEDASSETSCOUNTERTOINDEX+query);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSGETPAGINATEDASSETSCOUNTERTOINDEX+query);
 			}else{
 				dc.setSQL(OCLGETPAGINATEDASSETSCOUNTERTOINDEX+query);				
@@ -497,11 +497,11 @@ public class SolrAPIImpl extends SolrAPI{
 			if(UtilMethods.isSet(orderBy)){
 				query += " ORDER BY "+orderBy;
 			}
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				dc.setSQL(PSGETPAGINATEDASSETSTOINDEX+query);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYGETPAGINATEDASSETSTOINDEX+query);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSGETPAGINATEDASSETSTOINDEX+query);
 			}else{
 				dc.setSQL(OCLGETPAGINATEDASSETSTOINDEX+query);				
@@ -536,12 +536,12 @@ public class SolrAPIImpl extends SolrAPI{
 		try{
 			HibernateUtil.startTransaction();
 			DotConnect dc = new DotConnect();			
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				/*Validate if the table doesn't exist then is created*/				
 				dc.setSQL(PSUPDATEELEMENTFROMSOLRQUEUESQL);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYUPDATEELEMENTFROMSOLRQUEUESQL);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSUPDATEELEMENTFROMSOLRQUEUESQL);
 			}else{
 				dc.setSQL(OCLUPDATEELEMENTFROMSOLRQUEUESQL);
@@ -583,12 +583,12 @@ public class SolrAPIImpl extends SolrAPI{
 		try{
 			HibernateUtil.startTransaction();
 			DotConnect dc = new DotConnect();
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				/*Validate if the table doesn't exist then is created*/				
 				dc.setSQL(PSDELETEELEMENTFROMSOLRQUEUESQL);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYDELETEELEMENTFROMSOLRQUEUESQL);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSDELETEELEMENTFROMSOLRQUEUESQL);
 			}else{
 				dc.setSQL(OCLDELETEELEMENTFROMSOLRQUEUESQL);
@@ -621,12 +621,12 @@ public class SolrAPIImpl extends SolrAPI{
 		try{
 			HibernateUtil.startTransaction();
 			DotConnect dc = new DotConnect();
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				/*Validate if the table doesn't exist then is created*/				
 				dc.setSQL(PSDELETEALLELEMENTFROMSOLRQUEUESQL);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYDELETEALLELEMENTFROMSOLRQUEUESQL);
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSDELETEALLELEMENTFROMSOLRQUEUESQL);
 			}else{
 				dc.setSQL(OCLDELETEALLELEMENTFROMSOLRQUEUESQL);
