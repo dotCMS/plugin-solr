@@ -22,7 +22,7 @@ import javax.activation.MimetypesFileTypeMap;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
@@ -36,12 +36,11 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.servlet.SolrRequestParsers;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.AutoDetectParser;
-import org.apache.tika.parser.ParseContext;
-import org.apache.tika.parser.Parser;
-import org.apache.tika.sax.BodyContentHandler;
-import org.xml.sax.ContentHandler;
+import com.dotcms.repackage.org.apache.tika.metadata.Metadata;
+import com.dotcms.repackage.org.apache.tika.parser.AutoDetectParser;
+import com.dotcms.repackage.org.apache.tika.parser.ParseContext;
+import com.dotcms.repackage.org.apache.tika.parser.Parser;
+import com.dotcms.repackage.org.apache.tika.sax.BodyContentHandler;
 
 import com.dotcms.solr.business.DotSolrException;
 import com.dotmarketing.beans.Host;
@@ -68,7 +67,7 @@ import com.dotmarketing.util.StringUtils;
 import com.dotmarketing.util.UtilMethods;
 import com.liferay.portal.model.User;
 
-import edu.emory.mathcs.backport.java.util.Arrays;
+import com.dotcms.repackage.edu.emory.mathcs.backport.java.util.Arrays;
 /**
  * This class manage all the operation we can do over a from/to a Solr index (search, add and delete)
  * @author Oswaldo
@@ -81,12 +80,12 @@ public class SolrUtil {
 	 * This Methods was provided by S&P
 	 * 
 	 * @param SolrServerUrl
-	 * @return CommonsHttpSolrServer
+	 * @return HttpSolrClient
 	 * @throws IOException
 	 */
-	public static CommonsHttpSolrServer getHttpSolrServer(String SolrServerUrl)	throws IOException {
+	public static HttpSolrClient getHttpSolrServer(String SolrServerUrl)	throws IOException {
 		// configure a server object with actual solr values.
-		CommonsHttpSolrServer solrServer = new CommonsHttpSolrServer(
+		HttpSolrClient solrServer = new HttpSolrClient(
 				SolrServerUrl);
 		solrServer.setParser(new XMLResponseParser());
 		solrServer.setSoTimeout(5000);
@@ -101,7 +100,7 @@ public class SolrUtil {
 	 * @param solrServer solr server url
 	 * @return true if the servers is responding, false is the server is not accessible
 	 */
-	public static boolean checkSolrServerByPing(CommonsHttpSolrServer solrServer) {
+	public static boolean checkSolrServerByPing(HttpSolrClient solrServer) {
 		// configure a server object with actual solr values.
 		try {
 			SolrPingResponse solrPingResponse = solrServer.ping();
@@ -123,13 +122,13 @@ public class SolrUtil {
 	 * @throws SolrServerException
 	 * @throws IOException
 	 */
-	public static void addToSolrIndex(CommonsHttpSolrServer solrServer,	Collection<SolrInputDocument> docs) throws SolrServerException,	IOException {
+	public static void addToSolrIndex(HttpSolrClient solrServer,	Collection<SolrInputDocument> docs) throws SolrServerException,	IOException {
 		/* Add collection to solr index */
 		UpdateResponse rsp = solrServer.add(docs);
-		Logger.info(SolrUtil.class, "ADDING SORL INDEX: " + rsp);
+		Logger.info(SolrUtil.class, "ADDING SOLR INDEX: " + rsp);
 		/* Commit collection to solr index */
 		UpdateResponse rsp2 = solrServer.commit();
-		Logger.info(SolrUtil.class, "COMMITING SORL INDEX: " + rsp2);
+		Logger.info(SolrUtil.class, "COMMITING SOLR INDEX: " + rsp2);
 	}
 
 	/**
@@ -143,7 +142,7 @@ public class SolrUtil {
 	 * @throws IOException
 	 */
 	public static void addToSolrIndex(String SolrServerUrl, SolrInputDocument doc) throws SolrServerException, IOException {		
-		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
+		HttpSolrClient server = getHttpSolrServer(SolrServerUrl);
 		/* Add collection to solr index */
 		if (checkSolrServerByPing(server)) {
 			Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
@@ -162,7 +161,7 @@ public class SolrUtil {
 	 * @throws IOException
 	 */
 	public static void addToSolrIndex(String SolrServerUrl, Collection<SolrInputDocument> docs) throws SolrServerException, IOException {
-		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
+		HttpSolrClient server = getHttpSolrServer(SolrServerUrl);
 		/*Add collection to solr index*/		
 		if (checkSolrServerByPing(server)) {
 			addToSolrIndex(server, docs);
@@ -178,13 +177,13 @@ public class SolrUtil {
 	 * @throws SolrServerException
 	 * @throws IOException
 	 */
-	public static void deleteFromSolrIndexById(CommonsHttpSolrServer solrServer, String id) throws SolrServerException, IOException {
+	public static void deleteFromSolrIndexById(HttpSolrClient solrServer, String id) throws SolrServerException, IOException {
 		/* Delete collection from solr index */
 		UpdateResponse rsp = solrServer.deleteById(id);
-		Logger.debug(SolrUtil.class, "DELETING SORL INDEX: " + rsp);
+		Logger.debug(SolrUtil.class, "DELETING SOLR INDEX: " + rsp);
 		/* Commit collection to solr index */
 		UpdateResponse rsp2 = solrServer.commit();
-		Logger.debug(SolrUtil.class, "COMMITING SORL INDEX: " + rsp2);
+		Logger.debug(SolrUtil.class, "COMMITING SOLR INDEX: " + rsp2);
 	}
 
 
@@ -198,7 +197,7 @@ public class SolrUtil {
 	 * @throws IOException
 	 */
 	public static void deleteFromSolrIndexById(String SolrServerUrl, String id) throws SolrServerException, IOException {
-		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
+		HttpSolrClient server = getHttpSolrServer(SolrServerUrl);
 		/*Delete collection from solr index*/
 		if (checkSolrServerByPing(server)) {
 			deleteFromSolrIndexById(server, id);
@@ -214,14 +213,14 @@ public class SolrUtil {
 	 * @throws SolrServerException
 	 * @throws IOException
 	 */
-	public static boolean deleteFromSolrIndexById(CommonsHttpSolrServer solrServer, List<String> ids) {
+	public static boolean deleteFromSolrIndexById(HttpSolrClient solrServer, List<String> ids) {
 		try {
 			/* Add collection to solr index */
 			UpdateResponse rsp = solrServer.deleteById(ids);
-			Logger.debug(SolrUtil.class, "DELETING SORL INDEX: " + rsp);
+			Logger.debug(SolrUtil.class, "DELETING SOLR INDEX: " + rsp);
 			/* Commit collection to solr index */
 			UpdateResponse rsp2 = solrServer.commit();
-			Logger.debug(SolrUtil.class, "COMMITING SORL INDEX: " + rsp2);
+			Logger.debug(SolrUtil.class, "COMMITING SOLR INDEX: " + rsp2);
 			return true;
 		} catch (Exception e) {
 			Logger.error(SolrUtil.class, e.getMessage(), e);
@@ -239,7 +238,7 @@ public class SolrUtil {
 	 * @throws IOException
 	 */
 	public static boolean deleteFromSolrIndexById(String SolrServerUrl, List<String> ids) throws IOException {
-		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
+		HttpSolrClient server = getHttpSolrServer(SolrServerUrl);
 		/* Add collection to solr index */
 		if (checkSolrServerByPing(server)) {
 			return deleteFromSolrIndexById(server, ids);
@@ -324,7 +323,7 @@ public class SolrUtil {
 	 * @throws IOException 
 	 */
 	public static QueryResponse executeSolrGenericSearch(String SolrServerUrl, String query) throws SolrServerException, IOException {
-		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
+		HttpSolrClient server = getHttpSolrServer(SolrServerUrl);
 		SolrParams solrParams = SolrRequestParsers.parseQueryString(query);
 		return server.query(solrParams);
 	}
@@ -349,7 +348,7 @@ public class SolrUtil {
 	public static QueryResponse executeURLSolrParamsSearch(String SolrServerUrl, int start, int rows, String queryType,String facet, String ident, String query, String myCollection, String username, String password)
 			throws SolrServerException, IOException {
 
-		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
+		HttpSolrClient server = getHttpSolrServer(SolrServerUrl);
 
 		StringBuffer request = new StringBuffer();
 		if(UtilMethods.isSet(myCollection)){
@@ -399,7 +398,7 @@ public class SolrUtil {
 	public static QueryResponse executeModifiableSolrParamsSearch(String SolrServerUrl, int start, int rows,String queryType, String facet, String ident, String query, String myCollection, String username, String password)
 			throws SolrServerException, IOException {
 
-		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
+		HttpSolrClient server = getHttpSolrServer(SolrServerUrl);
 
 		ModifiableSolrParams solrParams = new ModifiableSolrParams();
 		if(UtilMethods.isSet(myCollection)){
@@ -447,7 +446,7 @@ public class SolrUtil {
 	 */
 	public static QueryResponse executeSolrQuerySearch(String SolrServerUrl, int start, int rows,String queryType, String facet, String ident, String query, String myCollection, String username, String password)
 			throws SolrServerException, IOException {
-		CommonsHttpSolrServer server = getHttpSolrServer(SolrServerUrl);
+		HttpSolrClient server = getHttpSolrServer(SolrServerUrl);
 
 		SolrQuery solrQuery = new SolrQuery();
 		if(UtilMethods.isSet(myCollection)){
@@ -467,7 +466,7 @@ public class SolrUtil {
 		}
 		if(UtilMethods.isSet(queryType)){
 			// qt=spellcheck || qt=spellchecker
-			solrQuery.setQueryType(queryType);
+			solrQuery.setQuery(queryType);
 		}
 		solrQuery.setQuery(query);
 		solrQuery.setStart(start);
@@ -493,7 +492,7 @@ public class SolrUtil {
 	public static boolean createSolrTable(){
 		try{
 			DotConnect dc = new DotConnect();
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				/*Validate if the table doesn't exist then is created*/
 				dc.setSQL(PGVALIDATETABLESQL);
 				long existTable = (Long)dc.loadObjectResults().get(0).get("exist");
@@ -502,10 +501,10 @@ public class SolrUtil {
 					dc.setSQL(PGCREATESQL);
 					dc.loadResult();	
 				}
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYCREATESQL);
 				dc.loadResult();				
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSVALIDATETABLESQL);
 				int existTable = (Integer)dc.loadObjectResults().get(0).get("exist");
 
@@ -550,13 +549,13 @@ public class SolrUtil {
 	public static boolean deleteSolrTable(){
 		try{
 			DotConnect dc = new DotConnect();
-			if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.POSTGRESQL)){
+			if(DbConnectionFactory.isPostgres()){
 				dc.setSQL(PGDELETESQL);
 				dc.loadResult();				
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MYSQL)){
+			}else if(DbConnectionFactory.isMySql()){
 				dc.setSQL(MYDELETESQL);
 				dc.loadResult();				
-			}else if(DbConnectionFactory.getDBType().equals(DbConnectionFactory.MSSQL)){
+			}else if(DbConnectionFactory.isMsSql()){
 				dc.setSQL(MSDELETESQL);
 				dc.loadResult();
 			}else{
@@ -697,7 +696,7 @@ public class SolrUtil {
 		Parser parser = getParser(file);
 		Metadata met = new Metadata();
 		//set -1 for no limit when parsing text content
-		ContentHandler handler =  new BodyContentHandler(-1);
+		BodyContentHandler handler =  new BodyContentHandler(-1);
 		ParseContext context = new ParseContext();
 		InputStream fis = null;
 		try {
