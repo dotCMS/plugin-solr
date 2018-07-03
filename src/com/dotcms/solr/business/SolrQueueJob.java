@@ -138,7 +138,11 @@ public class SolrQueueJob implements StatefulJob {
 
 										List<FieldVariable> fieldVariables = APILocator.getFieldAPI().getFieldVariablesForField(f.getInode(), user, false);
 										if(!SolrUtil.containsFieldVariable(fieldVariables, ignoreField)){
-											Object value = conAPI.getFieldValue(con, f);											
+											Object value = conAPI.getFieldValue(con, f);
+											if(value == null && (f instanceof HiddenField)){
+												value = f.values();
+											}
+											
 											String solrFieldName = SolrUtil.getSolrFieldName(fieldVariables, solrField, f.getVelocityVarName());
 
 											if(f.getFieldType().equals(Field.FieldType.DATE.toString()) || f.getFieldType().equals(Field.FieldType.DATE_TIME.toString())){
